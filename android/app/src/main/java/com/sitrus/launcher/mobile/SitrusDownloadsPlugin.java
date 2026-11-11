@@ -3,6 +3,8 @@ package com.sitrus.launcher.mobile;
 import android.Manifest;
 import android.app.Activity;
 import android.app.DownloadManager;
+import android.content.ClipData;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -10,9 +12,17 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.provider.Settings;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -21,6 +31,83 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "SitrusDownloads")
 public class SitrusDownloadsPlugin extends Plugin {
+    private static final String ENGINE_PACKAGE = "com.movtery.zalithlauncher.v2";
+    private static final String IMPORT_ACTIVITY = "com.movtery.activity.ImportModpackActivity";
+    private static final long ENGINE_MIN_BYTES = 80L * 1024L * 1024L;
+
+    @PluginMethod
+    public void deviceAbi(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("abi", preferredAbi());
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void engineInstalled(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("installed", isEngineInstalled());
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void play(PluginCall call) {
+        String packUrl = call.getString("packUrl");
+        String filename = call.getString("filename", "sitrus.mrpack");
+        String engineUrl = call.getString("engineUrl", "");
+        if (packUrl == null || packUrl.trim().isEmpty()) {
+            call.reject("Sem link do pack.");
+            return;
+        }
+        if (filename.contains("/") || filename.contains("\\") || filename.contains("..")) {
+            call.reject("Nome de arquivo inválido.");
+            return;
+        }
+        final String safeName = filename;
+        final String safeEngineUrl = engineUrl == null ? "" : engineUrl;
+        new Thread(() -> prepareAndOpen(call, packUrl, safeName, safeEngineUrl), "sitrus-play").start();
+    }
+
+    private void prepareAndOpen(PluginCall call, String packUrl, String filename, String engineUrl) {
+        try {
+            Context context = getContext();
+            if (context == null) {
+                call.reject("O Sitrus não está aberto.");
+                return;
+            }
+            File dir = new File(context.getCacheDir(), "sitrus");
+            if (!dir.isDirectory() && !dir.mkdirs()) {
+                call.reject("Não deu para preparar a pasta do jogo.");
+                return;
+            }
+            File pack = new File(dir, filename);
+            report(8, "Baixando o Sitrus...");
+            download(packUrl, pack, 8, 35, "Baixando o Sitrus...");
+            if (!isEngineInstalled()) {
+                if (engineUrl.trim().isEmpty()) {
+                    call.reject("Não encontrei o motor do jogo para este celular.");
+                    return;
+                }
+                File apk = new File(dir, "engine.apk");
+                if (!apk.isFile() || apk.length() < ENGINE_MIN_BYTES) {
+                    report(36, "Baixando o motor do jogo. A primeira vez demora.");
+                    download(engineUrl, apk, 36, 92, "Baixando o motor do jogo...");
+                }
+                String step = openEngineInstaller(apk);
+                JSObject result = new JSObject();
+                result.put("step", step);
+                call.resolve(result);
+                return;
+            }
+            report(96, "Abrindo o pack...");
+            openPack(pack);
+            JSObject result = new JSObject();
+            result.put("step", "import");
+            call.resolve(result);
+        } catch (Exception error) {
+            String message = error.getMessage();
+            call.reject(message == null || message.trim().isEmpty() ? "Não deu para preparar o jogo." : message);
+        }
+    }
     @PluginMethod
     public void enqueue(PluginCall call) {
         String url = call.getString("url");
@@ -144,5 +231,118 @@ public class SitrusDownloadsPlugin extends Plugin {
             return;
         }
         ActivityCompat.requestPermissions(activity, new String[] {Manifest.permission.POST_NOTIFICATIONS}, 4101);
+    }
+
+    private boolean isEngineInstalled() {
+        Context context = getContext();
+        if (context == null) return false;
+        try {
+            context.getPackageManager().getPackageInfo(ENGINE_PACKAGE, 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException error) {
+            return false;
+        }
+    }
+
+    private String preferredAbi() {
+        String[] abis = Build.SUPPORTED_ABIS;
+        if (abis == null) return "arm64-v8a";
+        for (String abi : abis) {
+            if ("arm64-v8a".equals(abi) || "armeabi-v7a".equals(abi) || "x86_64".equals(abi) || "x86".equals(abi)) {
+                return abi;
+            }
+        }
+        return "arm64-v8a";
+    }
+
+    private void report(int percent, String message) {
+        JSObject data = new JSObject();
+        data.put("percent", percent);
+        data.put("message", message);
+        notifyListeners("progress", data);
+    }
+
+    private void download(String urlString, File dest, int from, int to, String message) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
+        conn.setInstanceFollowRedirects(true);
+        conn.setConnectTimeout(20000);
+        conn.setReadTimeout(120000);
+        conn.setRequestProperty("User-Agent", "SitrusLauncher");
+        conn.setRequestProperty("Accept", "*/*");
+        int code = conn.getResponseCode();
+        if (code != HttpURLConnection.HTTP_OK) {
+            conn.disconnect();
+            throw new IOException("Download falhou (" + code + ").");
+        }
+        long total = conn.getContentLengthLong();
+        File part = new File(dest.getParentFile(), dest.getName() + ".part");
+        try (InputStream in = conn.getInputStream(); OutputStream out = new FileOutputStream(part)) {
+            byte[] buffer = new byte[64 * 1024];
+            long read = 0;
+            int last = -1;
+            int count;
+            while ((count = in.read(buffer)) >= 0) {
+                out.write(buffer, 0, count);
+                read += count;
+                int percent = total > 0 ? from + (int) ((read * (to - from)) / total) : from;
+                if (percent != last) {
+                    last = percent;
+                    report(percent, message);
+                }
+            }
+        } finally {
+            conn.disconnect();
+        }
+        if (dest.exists() && !dest.delete()) {
+            part.delete();
+            throw new IOException("Não deu para substituir o arquivo anterior.");
+        }
+        if (!part.renameTo(dest)) {
+            part.delete();
+            throw new IOException("Não deu para salvar o arquivo.");
+        }
+    }
+
+    private String openEngineInstaller(File apk) {
+        Context context = getContext();
+        if (context == null) throw new IllegalStateException("O Sitrus não está aberto.");
+        if (Build.VERSION.SDK_INT >= 26 && !context.getPackageManager().canRequestPackageInstalls()) {
+            Intent settings = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+            settings.setData(Uri.parse("package:" + context.getPackageName()));
+            settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startOnUi(settings);
+            return "allow-install";
+        }
+        Uri uri = fileUri(apk);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(uri, "application/vnd.android.package-archive");
+        intent.setClipData(ClipData.newRawUri("engine", uri));
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startOnUi(intent);
+        return "install-engine";
+    }
+
+    private void openPack(File pack) {
+        Context context = getContext();
+        if (context == null) throw new IllegalStateException("O Sitrus não está aberto.");
+        Uri uri = fileUri(pack);
+        context.grantUriPermission(ENGINE_PACKAGE, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setComponent(new ComponentName(ENGINE_PACKAGE, IMPORT_ACTIVITY));
+        intent.setDataAndType(uri, "application/zip");
+        intent.setClipData(ClipData.newRawUri("modpack", uri));
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startOnUi(intent);
+    }
+
+    private Uri fileUri(File file) {
+        Context context = getContext();
+        return FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
+    }
+
+    private void startOnUi(Intent intent) {
+        Activity activity = getActivity();
+        if (activity == null) throw new IllegalStateException("O Sitrus não está em primeiro plano.");
+        activity.runOnUiThread(() -> activity.startActivity(intent));
     }
 }

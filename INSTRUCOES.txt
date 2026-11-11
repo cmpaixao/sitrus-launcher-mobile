@@ -1,12 +1,12 @@
 SITRUS LAUNCHER MOBILE
 ======================
 
-O jogador baixa um APK, instala no celular e abre.
-O pack Sitrus Cobblemon Mobile (Fabric 1.21.1) é baixado depois,
-pelo botão Jogar, direto para a pasta Downloads.
+O jogador baixa um APK, instala no celular, coloca o nick e toca em Jogar.
+O Sitrus baixa o pack e, na primeira vez, o motor do jogo. O Android pede
+para instalar esse motor uma única vez. No Jogar seguinte, o pack abre sozinho.
 
 Arquivo para enviar:
-   dist\Sitrus-Launcher-Mobile-1.0.1.apk
+   dist\Sitrus-Launcher-Mobile-1.0.2.apk
 
 
 1) O QUE O JOGADOR FAZ
@@ -14,13 +14,12 @@ Arquivo para enviar:
 
 1. Baixa o APK e instala. O Android pede para permitir esta origem.
 2. Abre o Sitrus Launcher.
-3. Coloca um nick offline. A conta Microsoft entra depois, no Zalith.
-4. Toca em Jogar. O pack .mrpack vai para a pasta Downloads.
-5. Instala o Zalith Launcher 2 (APK arm64, na maioria dos celulares):
-   https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest
-6. No Zalith: Download > Modpacks > importar, e escolhe o arquivo em Downloads.
-7. Na instância, coloca a memória e o renderizador que o Sitrus sugeriu.
-8. Joga. O servidor sitruscobblemon.com já vem na lista.
+3. Coloca um nick offline.
+4. Toca em Jogar. A primeira vez baixa o motor do jogo e abre a instalação do Android.
+5. Toca em Instalar. Volta ao Sitrus e toca em Jogar de novo.
+6. O pack abre, baixa os mods e entra no Sitrus. A conta Microsoft entra nesse momento.
+   O servidor sitruscobblemon.com já vem na lista.
+   Se a instância pedir ajuste: 2 GB e MobileGlues.
 
 
 2) GERAR O APK DE NOVO

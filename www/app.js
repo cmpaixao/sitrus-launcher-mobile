@@ -197,7 +197,7 @@ function renderAccount() {
   ui.playBtn.disabled = !account || state.busy;
   ui.playBtn.textContent = state.busy ? "PREPARANDO..." : "JOGAR";
   ui.playBtn.classList.toggle("is-busy", state.busy);
-  ui.playBtn.title = account ? "Baixar o pack e preparar o Zalith" : "Entre com um nick para jogar";
+  ui.playBtn.title = account ? "Preparar o jogo e entrar" : "Entre com um nick para jogar";
   ui.accountChip.hidden = !account;
   ui.layout.classList.toggle("needs-login", (state.settings.lastTab || "home") === "home" && !account);
   if (!account) return;
@@ -295,6 +295,19 @@ function downloadsPlugin() {
   return window.Capacitor?.registerPlugin?.("SitrusDownloads") || null;
 }
 
+async function engineDownloadUrl() {
+  const plugin = downloadsPlugin();
+  const abi = (await plugin?.deviceAbi?.())?.abi || "arm64-v8a";
+  const response = await fetch("https://api.github.com/repos/ZalithLauncher/ZalithLauncher2/releases/latest", {
+    headers: { Accept: "application/vnd.github+json" },
+  });
+  if (!response.ok) throw new Error("Não deu para achar o motor do jogo. Confira a internet.");
+  const release = await response.json();
+  const match = (release.assets || []).find((asset) => asset.name.endsWith(`-${abi}.apk`) && !/mapping/i.test(asset.name));
+  if (!match?.browser_download_url) throw new Error("Não encontrei o motor do jogo para este celular.");
+  return match.browser_download_url;
+}
+
 async function openExternal(url) {
   if (!url) return;
   if (isNativeApp()) {
@@ -352,30 +365,16 @@ async function fetchBlob(url, size, onProgress) {
   return new Blob(chunks);
 }
 
-function showPlaySheet({ fresh }) {
-  const version = state.latest?.version_number || state.settings.downloadedVersion || "";
-  const filename = state.packFile?.name || `Sitrus-Cobblemon-Mobile-${version}.mrpack`;
-  const ram = state.settings.ramGb || 2;
-  const renderer = state.settings.renderer || "MobileGlues";
-  ui.playSheetTitle.textContent = fresh ? "Pack baixado" : "Pack pronto";
-  ui.playSheetText.textContent = fresh
-    ? `O arquivo ${filename} está indo para a pasta Downloads do celular. O Zalith importa esse arquivo, baixa os mods e entra no Sitrus.`
-    : `Você já está com a versão ${version || "mais recente"}. Se o arquivo não estiver em Downloads, baixa de novo e importa no Zalith.`;
-  ui.playSheetSteps.innerHTML = [
-    "Instale o Zalith Launcher 2, se ainda não tiver. Na hora de baixar o APK, escolha arm64, que é o da maioria dos celulares.",
-    "No Zalith, abra Download, depois Modpacks, e toque em importar modpack.",
-    `Escolha o arquivo ${filename}. O Zalith baixa os mods do pack. Deixe espaço livre.`,
-    "Quando a instância aparecer, abra as configurações dela e coloque a memória e o renderizador desta tela.",
-    "Toque para jogar. A conta Microsoft entra nesse momento. O servidor Sitrus já vem na lista.",
-  ].map((step) => `<li>${escapeHtml(step)}</li>`).join("") +
-    `<li>${escapeHtml(`Memória sugerida: ${ram} GB. Renderizador: ${renderer}.`)}</li>`;
-  ui.playSheetZalith.href = state.pack?.runtimeUrl || ui.playSheetZalith.href;
-  ui.playSheetSave.textContent = "Baixar para Downloads";
-  const file = state.packFile?.blob
-    ? new File([state.packFile.blob], filename, { type: "application/x-modrinth-modpack+zip" })
-    : null;
-  const canShare = Boolean(file && navigator.canShare?.({ files: [file] }));
-  ui.playSheetShare.hidden = !canShare;
+function showEngineSheet(kind) {
+  ui.playSheetTitle.textContent = kind === "allow" ? "Permissão do Android" : "Instalar o motor do jogo";
+  ui.playSheetText.textContent = kind === "allow"
+    ? "O Android precisa permitir que o Sitrus instale o motor do jogo. Aceite e volte para tocar em Jogar."
+    : "O Android abriu a instalação. Toque em Instalar. É uma vez só. Quando voltar ao Sitrus, toque em Jogar e o pack abre sozinho. A conta Microsoft entra nesse momento.";
+  ui.playSheetSteps.innerHTML = "";
+  ui.playSheetSteps.hidden = true;
+  ui.playSheetZalith.hidden = true;
+  ui.playSheetSave.hidden = true;
+  ui.playSheetShare.hidden = true;
   ui.playSheet.hidden = false;
 }
 
@@ -383,35 +382,51 @@ async function play() {
   if (state.busy || !state.account) return;
   state.busy = true;
   renderAccount();
+  let listener = null;
   try {
     setStatus("Procurando atualização do modpack...", 8);
     const latest = state.latest || await fetchLatestPack();
     const file = packFileOf(latest);
     if (!file?.url) throw new Error("Essa versão do pack não tem arquivo para baixar.");
-    if (state.settings.downloadedVersion === latest.version_number) {
-      state.packFile = { ...file, name: file.filename, url: file.url, blob: state.packFile?.blob || null };
-      setStatus(`Pack ${latest.version_number} pronto. O arquivo fica em Downloads.`, 0);
-      showPlaySheet({ fresh: false });
+    if (isNativeApp()) {
+      const plugin = downloadsPlugin();
+      if (!plugin?.play) throw new Error("Atualize o Sitrus Launcher para preparar o jogo daqui.");
+      listener = await plugin.addListener("progress", (data) => {
+        if (data?.message) setStatus(data.message, Number(data.percent) || 0);
+      });
+      const installed = await plugin.engineInstalled();
+      const engineUrl = installed?.installed ? "" : await engineDownloadUrl();
+      const result = await plugin.play({
+        packUrl: file.url,
+        filename: file.filename,
+        engineUrl,
+      });
+      state.packFile = { ...file, name: file.filename, url: file.url, blob: null };
+      saveSettings({ downloadedVersion: latest.version_number });
+      if (result?.step === "allow-install") {
+        showEngineSheet("allow");
+        setStatus("Permita a instalação e toque em Jogar de novo.", 0);
+      } else if (result?.step === "install-engine") {
+        showEngineSheet("install");
+        setStatus("Confirme a instalação. Depois toque em Jogar de novo.", 0);
+      } else {
+        ui.playSheet.hidden = true;
+        setStatus("O pack está abrindo. A primeira vez baixa os mods e pode demorar. Deixe espaço livre.", 100);
+      }
       return;
     }
     setStatus(`Baixando Sitrus Cobblemon Mobile ${latest.version_number}...`, 12);
-    let blob = null;
-    if (isNativeApp()) {
-      await saveToDownloads(file.url, file.filename);
-      setStatus(`Pack ${latest.version_number} baixado na pasta Downloads.`, 100);
-    } else {
-      blob = await fetchBlob(file.url, file.size, (ratio) => {
-        setStatus(`Baixando o pack... ${Math.round(ratio * 100)}%`, 12 + ratio * 82);
-      });
-      saveBlob(blob, file.filename);
-      setStatus(`Pack ${latest.version_number} baixado. Importe no Zalith.`, 100);
-    }
+    const blob = await fetchBlob(file.url, file.size, (ratio) => {
+      setStatus(`Baixando o pack... ${Math.round(ratio * 100)}%`, 12 + ratio * 82);
+    });
+    saveBlob(blob, file.filename);
     state.packFile = { ...file, name: file.filename, url: file.url, blob };
     saveSettings({ downloadedVersion: latest.version_number });
-    showPlaySheet({ fresh: true });
+    setStatus(`Pack ${latest.version_number} baixado. No celular, o app abre o jogo sozinho.`, 100);
   } catch (error) {
-    setStatus(error.message || "Não deu para preparar o pack. Confira sua internet e tente de novo.", 0, true);
+    setStatus(error.message || "Não deu para preparar o jogo. Confira sua internet e tente de novo.", 0, true);
   } finally {
+    await listener?.remove?.();
     state.busy = false;
     renderAccount();
     ui.progress.hidden = true;
@@ -433,9 +448,9 @@ function extrasHint(total) {
   const count = typeof total === "number" ? ` ${total} resultados.` : "";
   const folder = FOLDERS[state.extrasType] || "mods";
   if (state.extrasType === "shader") {
-    return `Shaders pesam no celular. O arquivo vai para Downloads e, no Zalith, entra em ${folder}.${count}`;
+    return `Shaders pesam no celular. O arquivo vai para Downloads e entra em ${folder}.${count}`;
   }
-  return `O arquivo vai para Downloads. Na instância do Zalith, coloque em ${folder}.${count}`;
+  return `O arquivo vai para Downloads. Na pasta da instância, coloque em ${folder}.${count}`;
 }
 
 function renderCategoryFilters() {
@@ -647,7 +662,7 @@ async function downloadExtra(id, type, versionId) {
     versionNumber: version.version_number || "",
   });
   saveExtras(items);
-  ui.extrasHint.textContent = `${file.filename} salvo em Downloads. No Zalith, coloque em ${FOLDERS[type] || "mods"}.`;
+  ui.extrasHint.textContent = `${file.filename} salvo em Downloads. Na pasta da instância, coloque em ${FOLDERS[type] || "mods"}.`;
 }
 
 function initSlider() {
@@ -906,7 +921,7 @@ async function boot() {
   } catch {
     state.pack = {
       launcherName: "Sitrus Launcher",
-      launcherVersion: "1.0.0",
+      launcherVersion: "1.0.2",
       modrinthSlug: "sitrus-cobblemon-mobile",
       modrinthUrl: "https://modrinth.com/modpack/sitrus-cobblemon-mobile",
       runtimeUrl: "https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest",

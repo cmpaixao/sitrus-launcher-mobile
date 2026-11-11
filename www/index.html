@@ -91,9 +91,9 @@
           <div id="homeTab" class="tab-page" role="tabpanel" aria-labelledby="homeTabBtn">
             <section class="card account login-card" id="loggedOut">
               <h2>Conta</h2>
-              <p>No celular, use um nick offline para liberar o Jogar. A conta Microsoft entra no Zalith, quando o jogo abrir.</p>
+              <p>No celular, use um nick offline para liberar o Jogar. A conta Microsoft entra quando o jogo abrir.</p>
               <button type="button" id="msBtn" class="primary">Entrar com Microsoft</button>
-              <p id="msNote" class="hint" hidden>A Microsoft abre dentro do Zalith Launcher. Aqui, escolha um nick offline.</p>
+              <p id="msNote" class="hint" hidden>A Microsoft entra quando o jogo abrir. Aqui, escolha um nick offline.</p>
               <div class="offline-row">
                 <label class="sr-only" for="offlineNick">Nick offline</label>
                 <input id="offlineNick" maxlength="16" placeholder="Nick offline" autocomplete="username" enterkeyhint="done" aria-describedby="nickHelp" />
@@ -108,7 +108,7 @@
               <div class="extras-head">
                 <div>
                   <h2>Extras</h2>
-                  <p>Mods, texturas e shaders de <strong>Fabric 1.21.1</strong>. No celular o arquivo vai para Downloads. Depois da instância criada no Zalith, coloque o arquivo na pasta certa.</p>
+                  <p>Mods, texturas e shaders de <strong>Fabric 1.21.1</strong>. No celular o arquivo vai para Downloads. Depois que a instância existir, coloque o arquivo na pasta certa.</p>
                 </div>
                 <span class="compat-chip">Fabric 1.21.1</span>
               </div>
@@ -145,21 +145,21 @@
               <div class="settings-pages scroll">
                 <section class="card settings-page" data-settings-page="minecraft">
                   <h2>Minecraft</h2>
-                  <p>Ajuste a memória sugerida e o servidor. O jogo em si abre no Zalith Launcher.</p>
+                  <p>O Jogar prepara o pack e abre o jogo. Estes valores são a sugestão se a instância pedir ajuste.</p>
                   <label class="ram" for="ram">
                     <span>Memória RAM</span>
                     <strong><span id="ramValue">2</span> GB</strong>
                   </label>
                   <input id="ram" type="range" min="1" max="4" step="1" value="2" aria-valuemin="1" aria-valuemax="4" aria-valuenow="2" aria-valuetext="2 gigabytes" />
-                  <p class="hint">2 GB funciona na maioria dos celulares. Se o jogo fechar, suba para 3 GB na instância do Zalith.</p>
-                  <label class="field" for="renderer">Renderizador no Zalith
+                  <p class="hint">2 GB e MobileGlues cobrem a maioria dos celulares. Se o jogo fechar, use 3 GB na instância.</p>
+                  <label class="field" for="renderer">Renderizador sugerido
                     <select id="renderer">
                       <option value="MobileGlues">MobileGlues</option>
                       <option value="ANGLE">ANGLE (Vulkan)</option>
                       <option value="GL4ES">GL4ES</option>
                     </select>
                   </label>
-                  <p class="hint">Escolha o mesmo renderizador nas configurações da instância. MobileGlues costuma ir melhor em pack.</p>
+                  <p class="hint">Se a instância pedir um renderizador, use o desta tela. MobileGlues costuma ir melhor em pack.</p>
                   <label class="field" for="serverAddress">IP do servidor
                     <input id="serverAddress" placeholder="sitruscobblemon.com" spellcheck="false" autocapitalize="off" />
                   </label>
@@ -168,7 +168,7 @@
                 </section>
                 <section class="card settings-page" data-settings-page="support" hidden>
                   <h2>Suporte</h2>
-                  <p>O registro do jogo fica no Zalith, na pasta da instância, em <strong>logs/latest.log</strong>. Abra um ticket e anexe esse arquivo.</p>
+                  <p>O registro do jogo fica na pasta da instância, em <strong>logs/latest.log</strong>. Abra um ticket e anexe esse arquivo.</p>
                   <button type="button" id="shareLogBtn" class="ghost">Abrir ticket no Discord</button>
                   <p id="shareLogHint" class="hint" role="status"></p>
                 </section>
@@ -177,15 +177,15 @@
                   <p>Está enfrentando algum problema com o launcher? Nesta seção ficam as orientações do celular: instalação do pack, memória e o jogo que fecha sozinho.</p>
                   <div class="help-block">
                     <h3>Como o jogo abre no celular?</h3>
-                    <p>O Android não roda o launcher de computador. O Sitrus baixa o pack oficial. O Zalith Launcher instala os mods, o Fabric e abre o Minecraft.</p>
+                    <p>Toque em Jogar. Na primeira vez o Sitrus baixa o motor do jogo e o Android pede para instalar. Depois o pack abre sozinho, baixa os mods e entra no Sitrus. A conta Microsoft entra nesse momento.</p>
                   </div>
                   <div class="help-block">
                     <h3>O download ou a atualização não funciona?</h3>
-                    <p>Confira a internet. O arquivo do pack é pequeno. Os mods baixam dentro do Zalith e podem passar de 1 GB. Deixe espaço livre no celular.</p>
+                    <p>Confira a internet e deixe espaço livre. O pack é pequeno. Os mods, na primeira abertura, podem passar de 1 GB.</p>
                   </div>
                   <div class="help-block">
                     <h3>O jogo apresentou algum erro ou fechou sozinho?</h3>
-                    <p>Na instância do Zalith, use a memória desta tela, o renderizador MobileGlues ou ANGLE, e baixe a distância de render. Shaders pesam bastante no celular.</p>
+                    <p>Na instância, use 2 GB e o renderizador MobileGlues, e baixe a distância de render. Shaders pesam bastante no celular.</p>
                   </div>
                   <div class="help-block">
                     <h3>Ainda precisa de ajuda?</h3>
@@ -196,7 +196,7 @@
                 </section>
               </div>
               <button type="button" id="uninstallBtn" class="danger-btn">Desinstalar e limpar</button>
-              <p class="hint">Apaga os arquivos que este launcher baixou e remove o app do celular, para não ficar ocupando espaço.</p>
+              <p class="hint">Apaga os arquivos que este launcher baixou e remove o app. O motor do jogo, se já foi instalado, sai em Configurações do Android, em Apps.</p>
             </div>
           </div>
         </aside>
@@ -210,7 +210,7 @@
           <ol id="playSheetSteps"></ol>
           <div class="play-sheet-actions">
             <button type="button" id="playSheetSave" class="primary">Baixar para Downloads</button>
-            <a id="playSheetZalith" class="ghost sheet-link" href="https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest" target="_blank" rel="noopener noreferrer">Baixar o Zalith Launcher</a>
+            <a id="playSheetZalith" class="ghost sheet-link" href="https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest" target="_blank" rel="noopener noreferrer" hidden>Baixar o motor do jogo</a>
             <button type="button" id="playSheetShare" class="ghost" hidden>Compartilhar o pack</button>
             <button type="button" id="playSheetClose" class="ghost">Fechar</button>
           </div>
