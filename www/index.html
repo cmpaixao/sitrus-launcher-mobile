@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0e0c0a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sitrus" />
+    <title>Sitrus Launcher</title>
+    <link rel="icon" href="./assets/icon.png" />
+    <link rel="apple-touch-icon" href="./assets/icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="window">
+      <header class="titlebar">
+        <div class="brand">
+          <img src="./assets/icon.png" alt="" />
+          <span>Sitrus</span>
+        </div>
+        <nav class="tabs chrome-tabs" role="tablist" aria-label="Seções do launcher">
+          <button type="button" id="homeTabBtn" class="tab active" role="tab" aria-selected="true" aria-controls="homeTab" tabindex="0" data-tab="home">Jogar</button>
+          <button type="button" id="extrasTabBtn" class="tab" role="tab" aria-selected="false" aria-controls="extrasTab" tabindex="-1" data-tab="extras">Extras</button>
+          <button type="button" id="configTabBtn" class="tab" role="tab" aria-selected="false" aria-controls="configTab" tabindex="-1" data-tab="config">Config</button>
+        </nav>
+      </header>
+
+      <main class="layout is-home needs-login" id="layout">
+        <section class="showcase">
+          <div class="slider" id="slider" aria-roledescription="carrossel" aria-label="Prints do servidor Sitrus Cobblemon">
+            <div class="slides">
+              <figure class="slide is-active"><img src="./assets/slides/02.jpg" alt="Batalha no ginásio Sitrus" /></figure>
+              <figure class="slide"><img src="./assets/slides/03.jpg" alt="Pokémon no spawn Sitrus" /></figure>
+              <figure class="slide"><img src="./assets/slides/04.jpg" alt="Crânio nas montanhas Sitrus" /></figure>
+              <figure class="slide"><img src="./assets/slides/05.jpg" alt="Vista aérea da cidade Sitrus" /></figure>
+              <figure class="slide"><img src="./assets/slides/06.png" alt="Cubo na floresta Sitrus" /></figure>
+              <figure class="slide"><img src="./assets/slides/07.png" alt="Cubo à noite na floresta Sitrus" /></figure>
+              <figure class="slide"><img src="./assets/slides/08.jpg" alt="Cidade Sitrus à noite" /></figure>
+              <figure class="slide"><img src="./assets/slides/09.jpg" alt="Cidade Sitrus de dia" /></figure>
+            </div>
+          </div>
+
+          <div class="wordmark">
+            <img src="./assets/logo-sitrus.png" alt="Sitrus Cobblemon" />
+          </div>
+
+          <div class="account-chip" id="accountChip" hidden>
+            <div class="chip-meta">
+              <strong id="chipName">Jogador</strong>
+              <button type="button" id="logoutBtn" class="ghost chip-logout">Trocar conta</button>
+            </div>
+            <img id="chipAvatar" alt="Avatar do jogador" referrerpolicy="no-referrer" />
+          </div>
+
+          <nav class="social-rail" aria-label="Atalhos">
+            <button type="button" id="railExtrasBtn">Extras</button>
+            <button type="button" id="railConfigBtn">Config</button>
+            <button type="button" id="discordBtn">Discord</button>
+            <button type="button" id="wikiBtn">Wiki</button>
+            <button type="button" id="storeBtn">Loja</button>
+            <button type="button" id="modrinthBtn">Pack</button>
+          </nav>
+
+          <div class="landing-bar">
+            <div class="server-status" id="serverStatus" aria-live="polite">
+              <span class="server-dot" id="serverDot"></span>
+              <div>
+                <small id="serverLabel">Sitrus Cobblemon</small>
+                <strong id="serverPlayers">Verificando servidor...</strong>
+              </div>
+            </div>
+            <div class="launch-cta">
+              <div class="launch-block">
+                <button type="button" id="playBtn" class="play" disabled title="Entre com uma conta para jogar">JOGAR</button>
+                <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="status" id="progress" hidden>
+                  <div id="bar"></div>
+                </div>
+                <p id="status" role="status" aria-live="polite">Entre com uma conta para jogar.</p>
+              </div>
+            </div>
+            <div class="pack-meta">
+              <span class="pack-chip" id="packVersion">• Sitrus Cobblemon</span>
+              <span class="launcher-foot" id="launcherVersionHome">Sitrus Launcher</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <div id="homeTab" class="tab-page" role="tabpanel" aria-labelledby="homeTabBtn">
+            <section class="card account login-card" id="loggedOut">
+              <h2>Conta</h2>
+              <p>No celular, use um nick offline para liberar o Jogar. A conta Microsoft entra no Zalith, quando o jogo abrir.</p>
+              <button type="button" id="msBtn" class="primary">Entrar com Microsoft</button>
+              <p id="msNote" class="hint" hidden>A Microsoft abre dentro do Zalith Launcher. Aqui, escolha um nick offline.</p>
+              <div class="offline-row">
+                <label class="sr-only" for="offlineNick">Nick offline</label>
+                <input id="offlineNick" maxlength="16" placeholder="Nick offline" autocomplete="username" enterkeyhint="done" aria-describedby="nickHelp" />
+                <button type="button" id="offlineBtn" disabled>Offline</button>
+              </div>
+              <p id="nickHelp" class="hint">3 a 16 caracteres: letras, números ou _</p>
+            </section>
+          </div>
+
+          <div id="extrasTab" class="tab-page" hidden role="tabpanel" aria-labelledby="extrasTabBtn">
+            <section class="card extras-card">
+              <div class="extras-head">
+                <div>
+                  <h2>Extras</h2>
+                  <p>Mods, texturas e shaders de <strong>Fabric 1.21.1</strong>. No celular o arquivo vai para Downloads. Depois da instância criada no Zalith, coloque o arquivo na pasta certa.</p>
+                </div>
+                <span class="compat-chip">Fabric 1.21.1</span>
+              </div>
+              <div class="filters" role="group" aria-label="Tipo de extra">
+                <button type="button" class="filter filter-type active" data-type="mod" aria-pressed="true">Mods</button>
+                <button type="button" class="filter filter-type" data-type="resourcepack" aria-pressed="false">Texturas</button>
+                <button type="button" class="filter filter-type" data-type="shader" aria-pressed="false">Shaders</button>
+              </div>
+              <div class="extras-search-row extras-controls">
+                <label class="sr-only" for="extrasSearch">Buscar extras no Modrinth</label>
+                <input id="extrasSearch" type="search" placeholder="Buscar no Modrinth..." autocomplete="off" enterkeyhint="search" />
+                <label class="sr-only" for="extrasSort">Ordenar</label>
+                <select id="extrasSort" aria-label="Ordenar extras">
+                  <option value="downloads">Mais baixados</option>
+                  <option value="follows">Mais seguidos</option>
+                  <option value="updated">Atualizados</option>
+                  <option value="newest">Mais novos</option>
+                  <option value="relevance">Relevância</option>
+                </select>
+              </div>
+              <div class="filters category-filters" id="extrasCategories" role="group" aria-label="Categorias"></div>
+              <p id="extrasHint" class="hint" role="note"></p>
+              <div id="extrasList" class="extras-list scroll" tabindex="0" aria-label="Lista de extras"></div>
+            </section>
+          </div>
+
+          <div id="configTab" class="tab-page" hidden role="tabpanel" aria-labelledby="configTabBtn">
+            <div class="settings-shell">
+              <nav class="settings-nav" aria-label="Configurações">
+                <button type="button" class="settings-nav-item active" data-settings="minecraft">Minecraft</button>
+                <button type="button" class="settings-nav-item" data-settings="support">Suporte</button>
+                <button type="button" class="settings-nav-item" data-settings="help">Ajuda</button>
+              </nav>
+              <div class="settings-pages scroll">
+                <section class="card settings-page" data-settings-page="minecraft">
+                  <h2>Minecraft</h2>
+                  <p>Ajuste a memória sugerida e o servidor. O jogo em si abre no Zalith Launcher.</p>
+                  <label class="ram" for="ram">
+                    <span>Memória RAM</span>
+                    <strong><span id="ramValue">2</span> GB</strong>
+                  </label>
+                  <input id="ram" type="range" min="1" max="4" step="1" value="2" aria-valuemin="1" aria-valuemax="4" aria-valuenow="2" aria-valuetext="2 gigabytes" />
+                  <p class="hint">2 GB funciona na maioria dos celulares. Se o jogo fechar, suba para 3 GB na instância do Zalith.</p>
+                  <label class="field" for="renderer">Renderizador no Zalith
+                    <select id="renderer">
+                      <option value="MobileGlues">MobileGlues</option>
+                      <option value="ANGLE">ANGLE (Vulkan)</option>
+                      <option value="GL4ES">GL4ES</option>
+                    </select>
+                  </label>
+                  <p class="hint">Escolha o mesmo renderizador nas configurações da instância. MobileGlues costuma ir melhor em pack.</p>
+                  <label class="field" for="serverAddress">IP do servidor
+                    <input id="serverAddress" placeholder="sitruscobblemon.com" spellcheck="false" autocapitalize="off" />
+                  </label>
+                  <p class="hint">O pack já traz o Sitrus na lista de servidores. Sitrus Launcher <span id="launcherVersion">—</span>.</p>
+                  <button type="button" id="installAppBtn" class="ghost" hidden>Instalar na tela inicial</button>
+                </section>
+                <section class="card settings-page" data-settings-page="support" hidden>
+                  <h2>Suporte</h2>
+                  <p>O registro do jogo fica no Zalith, na pasta da instância, em <strong>logs/latest.log</strong>. Abra um ticket e anexe esse arquivo.</p>
+                  <button type="button" id="shareLogBtn" class="ghost">Abrir ticket no Discord</button>
+                  <p id="shareLogHint" class="hint" role="status"></p>
+                </section>
+                <section class="card settings-page" data-settings-page="help" hidden>
+                  <h2>Central de Ajuda</h2>
+                  <p>Está enfrentando algum problema com o launcher? Nesta seção ficam as orientações do celular: instalação do pack, memória e o jogo que fecha sozinho.</p>
+                  <div class="help-block">
+                    <h3>Como o jogo abre no celular?</h3>
+                    <p>O Android não roda o launcher de computador. O Sitrus baixa o pack oficial. O Zalith Launcher instala os mods, o Fabric e abre o Minecraft.</p>
+                  </div>
+                  <div class="help-block">
+                    <h3>O download ou a atualização não funciona?</h3>
+                    <p>Confira a internet. O arquivo do pack é pequeno. Os mods baixam dentro do Zalith e podem passar de 1 GB. Deixe espaço livre no celular.</p>
+                  </div>
+                  <div class="help-block">
+                    <h3>O jogo apresentou algum erro ou fechou sozinho?</h3>
+                    <p>Na instância do Zalith, use a memória desta tela, o renderizador MobileGlues ou ANGLE, e baixe a distância de render. Shaders pesam bastante no celular.</p>
+                  </div>
+                  <div class="help-block">
+                    <h3>Ainda precisa de ajuda?</h3>
+                    <p>Nossa equipe está disponível para auxiliar você. Entre no Discord e abra um ticket com o arquivo latest.log.</p>
+                    <button type="button" id="helpTicketBtn" class="primary">Abrir ticket no Discord</button>
+                  </div>
+                  <p class="help-bye">Divirta-se e tenha uma ótima aventura na Sitrus Cobblemon!</p>
+                </section>
+              </div>
+              <button type="button" id="uninstallBtn" class="danger-btn">Desinstalar e limpar</button>
+              <p class="hint">Apaga os arquivos que este launcher baixou e remove o app do celular, para não ficar ocupando espaço.</p>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <div id="playSheet" class="play-sheet" hidden>
+        <button type="button" class="play-sheet-backdrop" id="playSheetBackdrop" aria-label="Fechar"></button>
+        <section class="play-sheet-card" role="dialog" aria-modal="true" aria-labelledby="playSheetTitle">
+          <h2 id="playSheetTitle">Pack pronto</h2>
+          <p id="playSheetText"></p>
+          <ol id="playSheetSteps"></ol>
+          <div class="play-sheet-actions">
+            <button type="button" id="playSheetSave" class="primary">Baixar para Downloads</button>
+            <a id="playSheetZalith" class="ghost sheet-link" href="https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest" target="_blank" rel="noopener noreferrer">Baixar o Zalith Launcher</a>
+            <button type="button" id="playSheetShare" class="ghost" hidden>Compartilhar o pack</button>
+            <button type="button" id="playSheetClose" class="ghost">Fechar</button>
+          </div>
+        </section>
+      </div>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "appId": "com.sitrus.launcher.mobile",
+  "appName": "Sitrus Launcher",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

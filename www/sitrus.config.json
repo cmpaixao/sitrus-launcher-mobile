@@ -1,0 +1,21 @@
+{
+  "launcherName": "Sitrus Launcher",
+  "launcherVersion": "1.0.1",
+  "modrinthSlug": "sitrus-cobblemon-mobile",
+  "modrinthUrl": "https://modrinth.com/modpack/sitrus-cobblemon-mobile",
+  "runtimeName": "Zalith Launcher",
+  "runtimeUrl": "https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest",
+  "discord": "https://discord.gg/wbavFswmkr",
+  "ticket": "https://discord.com/channels/1364321967947382835/1371322509713997906",
+  "wiki": "https://sitruscoblemon.gitbook.io/sitruscoblemon-docs",
+  "store": "https://sitruscobblemon.craftingstore.net/",
+  "server": {
+    "name": "Sitrus Cobblemon",
+    "address": "sitruscobblemon.com",
+    "port": 25565
+  },
+  "game": {
+    "version": "1.21.1",
+    "loader": "fabric"
+  }
+}

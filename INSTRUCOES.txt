@@ -1,0 +1,52 @@
+SITRUS LAUNCHER MOBILE
+======================
+
+O jogador baixa um APK, instala no celular e abre.
+O pack Sitrus Cobblemon Mobile (Fabric 1.21.1) é baixado depois,
+pelo botão Jogar, direto para a pasta Downloads.
+
+Arquivo para enviar:
+   dist\Sitrus-Launcher-Mobile-1.0.1.apk
+
+
+1) O QUE O JOGADOR FAZ
+----------------------
+
+1. Baixa o APK e instala. O Android pede para permitir esta origem.
+2. Abre o Sitrus Launcher.
+3. Coloca um nick offline. A conta Microsoft entra depois, no Zalith.
+4. Toca em Jogar. O pack .mrpack vai para a pasta Downloads.
+5. Instala o Zalith Launcher 2 (APK arm64, na maioria dos celulares):
+   https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest
+6. No Zalith: Download > Modpacks > importar, e escolhe o arquivo em Downloads.
+7. Na instância, coloca a memória e o renderizador que o Sitrus sugeriu.
+8. Joga. O servidor sitruscobblemon.com já vem na lista.
+
+
+2) GERAR O APK DE NOVO
+----------------------
+
+Precisa do Node.js e do Android SDK em C:\Android\sdk.
+
+Na pasta "Laucher sitrus mobile":
+
+   npm install
+   npm run apk
+
+O arquivo sai em dist\.
+
+
+3) OLHAR NO COMPUTADOR
+----------------------
+
+   npm start
+
+Abre http://127.0.0.1:4173
+No navegador o pack também baixa, mas o arquivo que o jogador instala é o APK.
+
+Links:
+- Servidor: sitruscobblemon.com
+- Pack:     https://modrinth.com/modpack/sitrus-cobblemon-mobile
+- Wiki:     https://sitruscoblemon.gitbook.io/sitruscoblemon-docs
+- Loja:     https://sitruscobblemon.craftingstore.net/
+- Discord:  https://discord.gg/wbavFswmkr
