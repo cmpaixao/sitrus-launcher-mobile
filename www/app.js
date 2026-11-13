@@ -366,13 +366,13 @@ async function fetchBlob(url, size, onProgress) {
 }
 
 function showEngineSheet(kind) {
-  ui.playSheetTitle.textContent = kind === "allow" ? "Permissão do Android" : "Instalar o motor do jogo";
+  ui.playSheetTitle.textContent = kind === "allow" ? "Permissão do Android" : "Falta instalar o jogo";
   ui.playSheetText.textContent = kind === "allow"
-    ? "O Android precisa permitir que o Sitrus instale o motor do jogo. Aceite e volte para tocar em Jogar."
-    : "O Android abriu a instalação. Toque em Instalar. É uma vez só. Quando voltar ao Sitrus, toque em Jogar e o pack abre sozinho. A conta Microsoft entra nesse momento.";
+    ? "O Android precisa permitir que o Sitrus instale o jogo. Aceite e volte. O pack abre sozinho."
+    : "O Android abriu a instalação. Toque em Instalar e volte para o Sitrus. O modpack abre sozinho. Se não abrir, toque em Jogar de novo.";
   ui.playSheetSteps.innerHTML = "";
   ui.playSheetSteps.hidden = true;
-  ui.playSheetZalith.hidden = true;
+  if (ui.playSheetZalith) ui.playSheetZalith.hidden = true;
   ui.playSheetSave.hidden = true;
   ui.playSheetShare.hidden = true;
   ui.playSheet.hidden = false;
@@ -381,6 +381,7 @@ function showEngineSheet(kind) {
 async function play() {
   if (state.busy || !state.account) return;
   state.busy = true;
+  ui.playSheet.hidden = true;
   renderAccount();
   let listener = null;
   try {
@@ -388,43 +389,51 @@ async function play() {
     const latest = state.latest || await fetchLatestPack();
     const file = packFileOf(latest);
     if (!file?.url) throw new Error("Essa versão do pack não tem arquivo para baixar.");
-    if (isNativeApp()) {
-      const plugin = downloadsPlugin();
-      if (!plugin?.play) throw new Error("Atualize o Sitrus Launcher para preparar o jogo daqui.");
-      listener = await plugin.addListener("progress", (data) => {
-        if (data?.message) setStatus(data.message, Number(data.percent) || 0);
+    if (!isNativeApp()) {
+      setStatus(`Baixando Sitrus Cobblemon Mobile ${latest.version_number}...`, 12);
+      const blob = await fetchBlob(file.url, file.size, (ratio) => {
+        setStatus(`Baixando o pack... ${Math.round(ratio * 100)}%`, 12 + ratio * 82);
       });
-      const installed = await plugin.engineInstalled();
-      const engineUrl = installed?.installed ? "" : await engineDownloadUrl();
-      const result = await plugin.play({
-        packUrl: file.url,
-        filename: file.filename,
-        engineUrl,
-      });
-      state.packFile = { ...file, name: file.filename, url: file.url, blob: null };
+      saveBlob(blob, file.filename);
+      state.packFile = { ...file, name: file.filename, url: file.url, blob };
       saveSettings({ downloadedVersion: latest.version_number });
-      if (result?.step === "allow-install") {
-        showEngineSheet("allow");
-        setStatus("Permita a instalação e toque em Jogar de novo.", 0);
-      } else if (result?.step === "install-engine") {
-        showEngineSheet("install");
-        setStatus("Confirme a instalação. Depois toque em Jogar de novo.", 0);
-      } else {
-        ui.playSheet.hidden = true;
-        setStatus("O pack está abrindo. A primeira vez baixa os mods e pode demorar. Deixe espaço livre.", 100);
-      }
+      setStatus(`Pack ${latest.version_number} baixado. No celular, Jogar abre o modpack.`, 100);
       return;
     }
-    setStatus(`Baixando Sitrus Cobblemon Mobile ${latest.version_number}...`, 12);
-    const blob = await fetchBlob(file.url, file.size, (ratio) => {
-      setStatus(`Baixando o pack... ${Math.round(ratio * 100)}%`, 12 + ratio * 82);
+    const plugin = downloadsPlugin();
+    if (!plugin?.play) throw new Error("Reinstale o Sitrus Launcher para abrir o modpack daqui.");
+    listener = await plugin.addListener("progress", (data) => {
+      if (data?.message) setStatus(data.message, Number(data.percent) || 0);
     });
-    saveBlob(blob, file.filename);
-    state.packFile = { ...file, name: file.filename, url: file.url, blob };
+    const installed = await plugin.engineInstalled();
+    let engineUrl = "";
+    if (!installed?.installed) {
+      try {
+        engineUrl = await engineDownloadUrl();
+      } catch (error) {
+        throw new Error(error.message || "Não deu para preparar o jogo. Confira a internet.");
+      }
+    }
+    const result = await plugin.play({
+      packUrl: file.url,
+      filename: "sitrus-mobile.mrpack",
+      engineUrl,
+    });
+    state.packFile = { ...file, name: file.filename, url: file.url, blob: null };
     saveSettings({ downloadedVersion: latest.version_number });
-    setStatus(`Pack ${latest.version_number} baixado. No celular, o app abre o jogo sozinho.`, 100);
+    if (result?.step === "allow-install") {
+      showEngineSheet("allow");
+      setStatus("Permita a instalação. Ao voltar, o modpack abre.", 0);
+    } else if (result?.step === "install-engine") {
+      showEngineSheet("install");
+      setStatus("Toque em Instalar. Ao voltar para o Sitrus, o modpack abre.", 0);
+    } else {
+      ui.playSheet.hidden = true;
+      setStatus("O modpack está abrindo. A primeira vez baixa os mods e pode demorar.", 100);
+    }
   } catch (error) {
-    setStatus(error.message || "Não deu para preparar o jogo. Confira sua internet e tente de novo.", 0, true);
+    ui.playSheet.hidden = true;
+    setStatus(error.message || "Não deu para abrir o modpack. Confira sua internet e toque em Jogar de novo.", 0, true);
   } finally {
     await listener?.remove?.();
     state.busy = false;
@@ -698,6 +707,10 @@ function initSlider() {
 }
 
 function wire() {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !isNativeApp()) return;
+    downloadsPlugin()?.openPending?.().catch(() => {});
+  });
   ui.homeTabBtn.onclick = () => showTab("home");
   ui.extrasTabBtn.onclick = () => showTab("extras");
   ui.configTabBtn.onclick = () => showTab("config");
@@ -921,7 +934,7 @@ async function boot() {
   } catch {
     state.pack = {
       launcherName: "Sitrus Launcher",
-      launcherVersion: "1.0.2",
+      launcherVersion: "1.0.3",
       modrinthSlug: "sitrus-cobblemon-mobile",
       modrinthUrl: "https://modrinth.com/modpack/sitrus-cobblemon-mobile",
       runtimeUrl: "https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest",

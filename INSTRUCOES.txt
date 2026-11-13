@@ -1,24 +1,22 @@
 SITRUS LAUNCHER MOBILE
 ======================
 
-O jogador baixa um APK, instala no celular, coloca o nick e toca em Jogar.
-O Sitrus baixa o pack e, na primeira vez, o motor do jogo. O Android pede
-para instalar esse motor uma única vez. No Jogar seguinte, o pack abre sozinho.
+O jogador instala o APK, coloca o nick e toca em Jogar.
+O Sitrus baixa o modpack e abre no celular. Na primeira vez o Android
+pede para instalar o jogo. Ao voltar, o pack abre sozinho.
 
 Arquivo para enviar:
-   dist\Sitrus-Launcher-Mobile-1.0.2.apk
+   dist\Sitrus-Launcher-Mobile-1.0.3.apk
 
 
 1) O QUE O JOGADOR FAZ
 ----------------------
 
-1. Baixa o APK e instala. O Android pede para permitir esta origem.
-2. Abre o Sitrus Launcher.
-3. Coloca um nick offline.
-4. Toca em Jogar. A primeira vez baixa o motor do jogo e abre a instalação do Android.
-5. Toca em Instalar. Volta ao Sitrus e toca em Jogar de novo.
-6. O pack abre, baixa os mods e entra no Sitrus. A conta Microsoft entra nesse momento.
-   O servidor sitruscobblemon.com já vem na lista.
+1. Baixa o APK e instala por cima do anterior.
+2. Abre o Sitrus Launcher e coloca um nick offline.
+3. Toca em Jogar. A primeira vez o Android abre a instalação do jogo.
+4. Toca em Instalar e volta ao Sitrus. O modpack abre sozinho.
+   A conta Microsoft entra nesse momento. O servidor já vem na lista.
    Se a instância pedir ajuste: 2 GB e MobileGlues.
 
 

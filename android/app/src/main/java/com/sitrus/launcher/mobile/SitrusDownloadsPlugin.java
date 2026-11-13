@@ -34,6 +34,8 @@ public class SitrusDownloadsPlugin extends Plugin {
     private static final String ENGINE_PACKAGE = "com.movtery.zalithlauncher.v2";
     private static final String IMPORT_ACTIVITY = "com.movtery.activity.ImportModpackActivity";
     private static final long ENGINE_MIN_BYTES = 80L * 1024L * 1024L;
+    private volatile boolean openPackWhenInstalled = false;
+    private volatile File pendingPack = null;
 
     @PluginMethod
     public void deviceAbi(PluginCall call) {
@@ -58,16 +60,31 @@ public class SitrusDownloadsPlugin extends Plugin {
             call.reject("Sem link do pack.");
             return;
         }
-        if (filename.contains("/") || filename.contains("\\") || filename.contains("..")) {
-            call.reject("Nome de arquivo inválido.");
-            return;
-        }
-        final String safeName = filename;
         final String safeEngineUrl = engineUrl == null ? "" : engineUrl;
-        new Thread(() -> prepareAndOpen(call, packUrl, safeName, safeEngineUrl), "sitrus-play").start();
+        new Thread(() -> prepareAndOpen(call, packUrl, safeEngineUrl), "sitrus-play").start();
     }
 
-    private void prepareAndOpen(PluginCall call, String packUrl, String filename, String engineUrl) {
+    @PluginMethod
+    public void openPending(PluginCall call) {
+        openPackIfReady();
+        JSObject result = new JSObject();
+        result.put("opened", !openPackWhenInstalled && pendingPack != null);
+        call.resolve(result);
+    }
+
+    public void openPackIfReady() {
+        File pack = pendingPack;
+        if (!openPackWhenInstalled || pack == null || !pack.isFile()) return;
+        if (!isEngineInstalled()) return;
+        openPackWhenInstalled = false;
+        try {
+            openPack(pack);
+        } catch (RuntimeException error) {
+            openPackWhenInstalled = true;
+        }
+    }
+
+    private void prepareAndOpen(PluginCall call, String packUrl, String engineUrl) {
         try {
             Context context = getContext();
             if (context == null) {
@@ -79,26 +96,29 @@ public class SitrusDownloadsPlugin extends Plugin {
                 call.reject("Não deu para preparar a pasta do jogo.");
                 return;
             }
-            File pack = new File(dir, filename);
-            report(8, "Baixando o Sitrus...");
-            download(packUrl, pack, 8, 35, "Baixando o Sitrus...");
+            File pack = new File(dir, "sitrus-mobile.mrpack");
+            report(8, "Baixando o modpack...");
+            download(packUrl, pack, 8, 35, "Baixando o modpack...");
+            pendingPack = pack;
             if (!isEngineInstalled()) {
                 if (engineUrl.trim().isEmpty()) {
-                    call.reject("Não encontrei o motor do jogo para este celular.");
+                    call.reject("Não deu para preparar o jogo. Confira a internet e toque em Jogar de novo.");
                     return;
                 }
                 File apk = new File(dir, "engine.apk");
                 if (!apk.isFile() || apk.length() < ENGINE_MIN_BYTES) {
-                    report(36, "Baixando o motor do jogo. A primeira vez demora.");
-                    download(engineUrl, apk, 36, 92, "Baixando o motor do jogo...");
+                    report(36, "Preparando o jogo neste celular. A primeira vez demora.");
+                    download(engineUrl, apk, 36, 92, "Preparando o jogo neste celular...");
                 }
+                openPackWhenInstalled = true;
                 String step = openEngineInstaller(apk);
                 JSObject result = new JSObject();
                 result.put("step", step);
                 call.resolve(result);
                 return;
             }
-            report(96, "Abrindo o pack...");
+            openPackWhenInstalled = false;
+            report(96, "Abrindo o modpack...");
             openPack(pack);
             JSObject result = new JSObject();
             result.put("step", "import");
@@ -116,10 +136,7 @@ public class SitrusDownloadsPlugin extends Plugin {
             call.reject("Sem link para baixar.");
             return;
         }
-        if (filename.contains("/") || filename.contains("\\")) {
-            call.reject("Nome de arquivo inválido.");
-            return;
-        }
+        filename = safeFileName(filename);
 
         askForDownloadNotification();
 
@@ -253,6 +270,13 @@ public class SitrusDownloadsPlugin extends Plugin {
             }
         }
         return "arm64-v8a";
+    }
+
+    private String safeFileName(String filename) {
+        if (filename == null) return "sitrus.mrpack";
+        String cleaned = filename.replaceAll("[^A-Za-z0-9._-]", "_");
+        if (cleaned.isEmpty() || ".".equals(cleaned) || "..".equals(cleaned)) return "sitrus.mrpack";
+        return cleaned;
     }
 
     private void report(int percent, String message) {
