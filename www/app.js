@@ -295,8 +295,14 @@ function isNativeApp() {
   return window.Capacitor?.isNativePlatform?.() === true;
 }
 
+function capacitorPlugin(name) {
+  const bridged = window.Capacitor?.Plugins?.[name];
+  if (bridged) return bridged;
+  return window.Capacitor?.registerPlugin?.(name) || null;
+}
+
 function downloadsPlugin() {
-  return window.Capacitor?.registerPlugin?.("SitrusDownloads") || null;
+  return capacitorPlugin("SitrusDownloads");
 }
 
 async function engineDownloadUrl() {
@@ -378,7 +384,7 @@ async function openExternal(url) {
   if (!url) return;
   if (isNativeApp()) {
     try {
-      const browser = window.Capacitor.registerPlugin("Browser");
+      const browser = capacitorPlugin("Browser");
       await browser.open({ url });
       return;
     } catch {
@@ -467,7 +473,7 @@ async function play() {
       return;
     }
     const plugin = downloadsPlugin();
-    if (!plugin?.play) throw new Error("Reinstale o Sitrus Launcher para abrir o modpack daqui.");
+    if (!plugin?.play) throw new Error("O Sitrus não conseguiu abrir o modpack. Feche o app e abra de novo.");
     listener = await plugin.addListener("progress", (data) => {
       if (data?.message) setStatus(data.message, Number(data.percent) || 0);
     });
@@ -1005,7 +1011,7 @@ async function boot() {
   } catch {
     state.pack = {
       launcherName: "Sitrus Launcher",
-      launcherVersion: "1.0.4",
+      launcherVersion: "1.0.5",
       modrinthSlug: "sitrus-cobblemon-mobile",
       modrinthUrl: "https://modrinth.com/modpack/sitrus-cobblemon-mobile",
       runtimeUrl: "https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest",
