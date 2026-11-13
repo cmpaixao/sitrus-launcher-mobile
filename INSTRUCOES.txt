@@ -10,7 +10,14 @@ Arquivo para enviar:
 
 O celular procura sozinho o release mais novo em
 https://github.com/cmpaixao/sitrus-launcher-mobile/releases
-Ao publicar uma versão com o APK, o launcher baixa e abre a atualização.
+Ao publicar uma versão com o APK Sitrus-Launcher-Mobile-*.apk, o launcher baixa e abre a atualização.
+
+O APK que abre o Minecraft no celular é outro arquivo, o motor do jogo
+com o nome e o ícone do Sitrus:
+
+   dist\Sitrus-Minecraft.apk
+
+Ele não entra na atualização automática do launcher de tela.
 
 
 1) O QUE O JOGADOR FAZ
