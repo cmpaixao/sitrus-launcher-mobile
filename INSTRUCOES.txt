@@ -6,7 +6,7 @@ O Sitrus baixa o modpack e abre no celular. Na primeira vez o Android
 pede para instalar o jogo. Ao voltar, o pack abre sozinho.
 
 Arquivo para enviar:
-   dist\Sitrus-Launcher-Mobile-1.0.5.apk
+   dist\Sitrus-Launcher-Mobile-1.0.6.apk
 
 O celular procura sozinho o release mais novo em
 https://github.com/cmpaixao/sitrus-launcher-mobile/releases
