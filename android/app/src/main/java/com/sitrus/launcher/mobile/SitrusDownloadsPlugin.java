@@ -7,6 +7,7 @@ import android.content.ClipData;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -49,6 +50,84 @@ public class SitrusDownloadsPlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("installed", isEngineInstalled());
         call.resolve(result);
+    }
+
+    @PluginMethod
+    public void appVersion(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("version", "0.0.0");
+        result.put("code", 0);
+        Context context = getContext();
+        if (context != null) {
+            try {
+                PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+                result.put("version", info.versionName == null ? "0.0.0" : info.versionName);
+                result.put("code", info.versionCode);
+            } catch (PackageManager.NameNotFoundException ignored) {
+                // mantém a versão padrão
+            }
+        }
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void installUpdate(PluginCall call) {
+        String url = call.getString("url");
+        String version = call.getString("version", "");
+        if (url == null || url.trim().isEmpty()) {
+            call.reject("Sem atualização para baixar.");
+            return;
+        }
+        final String safeUrl = url;
+        final String safeVersion = version == null ? "" : version;
+        new Thread(() -> downloadAndInstallUpdate(call, safeUrl, safeVersion), "sitrus-update").start();
+    }
+
+    @PluginMethod
+    public void openDownloadedUpdate(PluginCall call) {
+        Context context = getContext();
+        if (context == null) {
+            call.reject("O Sitrus não está aberto.");
+            return;
+        }
+        File apk = new File(new File(context.getCacheDir(), "sitrus"), "sitrus-update.apk");
+        if (!apk.isFile()) {
+            call.reject("A atualização ainda não foi baixada.");
+            return;
+        }
+        try {
+            String step = openEngineInstaller(apk);
+            JSObject result = new JSObject();
+            result.put("step", step);
+            call.resolve(result);
+        } catch (RuntimeException error) {
+            call.reject(error.getMessage() == null ? "Não deu para abrir a atualização." : error.getMessage());
+        }
+    }
+
+    private void downloadAndInstallUpdate(PluginCall call, String url, String version) {
+        try {
+            Context context = getContext();
+            if (context == null) {
+                call.reject("O Sitrus não está aberto.");
+                return;
+            }
+            File dir = new File(context.getCacheDir(), "sitrus");
+            if (!dir.isDirectory() && !dir.mkdirs()) {
+                call.reject("Não deu para preparar a atualização.");
+                return;
+            }
+            File apk = new File(dir, "sitrus-update.apk");
+            download(url, apk, 0, 100, "Baixando atualização...", true);
+            String step = openEngineInstaller(apk);
+            JSObject result = new JSObject();
+            result.put("step", step);
+            result.put("version", version);
+            call.resolve(result);
+        } catch (Exception error) {
+            String message = error.getMessage();
+            call.reject(message == null || message.trim().isEmpty() ? "Não deu para atualizar o launcher." : message);
+        }
     }
 
     @PluginMethod
@@ -286,7 +365,18 @@ public class SitrusDownloadsPlugin extends Plugin {
         notifyListeners("progress", data);
     }
 
+    private void reportUpdate(int percent) {
+        JSObject data = new JSObject();
+        data.put("status", "downloading");
+        data.put("percent", percent);
+        notifyListeners("launcherUpdate", data);
+    }
+
     private void download(String urlString, File dest, int from, int to, String message) throws IOException {
+        download(urlString, dest, from, to, message, false);
+    }
+
+    private void download(String urlString, File dest, int from, int to, String message, boolean launcherUpdate) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
         conn.setInstanceFollowRedirects(true);
         conn.setConnectTimeout(20000);
@@ -311,7 +401,8 @@ public class SitrusDownloadsPlugin extends Plugin {
                 int percent = total > 0 ? from + (int) ((read * (to - from)) / total) : from;
                 if (percent != last) {
                     last = percent;
-                    report(percent, message);
+                    if (launcherUpdate) reportUpdate(percent);
+                    else report(percent, message);
                 }
             }
         } finally {

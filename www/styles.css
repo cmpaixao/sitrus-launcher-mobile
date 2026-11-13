@@ -390,6 +390,42 @@ button, a.primary {
   color: #ffb4a8;
 }
 
+.launcher-update {
+  width: min(320px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(14, 12, 10, 0.92);
+}
+
+.launcher-update[hidden] {
+  display: none;
+}
+
+.launcher-update p {
+  margin: 0;
+  color: #fff8ea;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.launcher-update button {
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #ffd56a, var(--accent));
+  color: #3a2a08;
+  font-weight: 700;
+}
+
+.launcher-update button[hidden] {
+  display: none;
+}
+
 .pack-meta {
   display: flex;
   flex-direction: column;

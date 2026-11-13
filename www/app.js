@@ -92,6 +92,9 @@ const ui = {
   playSheetSave: document.getElementById("playSheetSave"),
   playSheetShare: document.getElementById("playSheetShare"),
   playSheetClose: document.getElementById("playSheetClose"),
+  launcherUpdate: document.getElementById("launcherUpdate"),
+  launcherUpdateText: document.getElementById("launcherUpdateText"),
+  launcherUpdateBtn: document.getElementById("launcherUpdateBtn"),
 };
 
 const state = {
@@ -111,6 +114,7 @@ const state = {
   extrasHits: [],
   extrasOpenId: "",
   extrasVersions: {},
+  updating: false,
   installPrompt: null,
 };
 
@@ -306,6 +310,68 @@ async function engineDownloadUrl() {
   const match = (release.assets || []).find((asset) => asset.name.endsWith(`-${abi}.apk`) && !/mapping/i.test(asset.name));
   if (!match?.browser_download_url) throw new Error("Não encontrei o motor do jogo para este celular.");
   return match.browser_download_url;
+}
+
+function compareVersions(left, right) {
+  const parse = (value) => String(value || "").replace(/^v/, "").split(".").map((part) => parseInt(part, 10) || 0);
+  const a = parse(left);
+  const b = parse(right);
+  const length = Math.max(a.length, b.length);
+  for (let index = 0; index < length; index += 1) {
+    const diff = (a[index] || 0) - (b[index] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+function showLauncherUpdate(text, showButton) {
+  if (!ui.launcherUpdate || !ui.launcherUpdateText) return;
+  ui.launcherUpdate.hidden = false;
+  ui.launcherUpdateText.textContent = text;
+  if (ui.launcherUpdateBtn) ui.launcherUpdateBtn.hidden = !showButton;
+}
+
+async function checkLauncherUpdate() {
+  if (!isNativeApp() || state.updating || state.busy) return;
+  const plugin = downloadsPlugin();
+  if (!plugin?.installUpdate) return;
+  const nativeVersion = await plugin.appVersion?.();
+  const current = nativeVersion?.version || state.pack?.launcherVersion || "0.0.0";
+  let release;
+  try {
+    const response = await fetch("https://api.github.com/repos/cmpaixao/sitrus-launcher-mobile/releases/latest", {
+      headers: { Accept: "application/vnd.github+json", "User-Agent": "SitrusLauncher" },
+    });
+    if (!response.ok) return;
+    release = await response.json();
+  } catch {
+    return;
+  }
+  const remote = String(release.tag_name || "").replace(/^v/, "");
+  if (!remote || compareVersions(remote, current) <= 0) return;
+  const asset = (release.assets || []).find((item) => /Sitrus-Launcher-Mobile-.*\.apk$/i.test(item.name));
+  if (!asset?.browser_download_url) return;
+  state.updating = true;
+  showLauncherUpdate(`Nova versão ${remote} encontrada. Baixando...`, false);
+  let listener = null;
+  try {
+    listener = await plugin.addListener("launcherUpdate", (data) => {
+      if (data?.status === "downloading") {
+        showLauncherUpdate(`Baixando atualização do launcher... ${Math.round(Number(data.percent) || 0)}%`, false);
+      }
+    });
+    const result = await plugin.installUpdate({ url: asset.browser_download_url, version: remote });
+    if (result?.step === "allow-install") {
+      showLauncherUpdate("Permita a instalação para o Sitrus atualizar sozinho.", true);
+    } else {
+      showLauncherUpdate(`Versão ${remote} pronta. Confirme a atualização do Android.`, true);
+    }
+  } catch (error) {
+    showLauncherUpdate(error.message || "Não deu para atualizar o launcher. Vou tentar de novo ao reabrir.", false);
+  } finally {
+    await listener?.remove?.();
+    state.updating = false;
+  }
 }
 
 async function openExternal(url) {
@@ -760,6 +826,11 @@ function wire() {
   };
 
   ui.playBtn.onclick = play;
+  ui.launcherUpdateBtn.onclick = () => {
+    downloadsPlugin()?.openDownloadedUpdate?.().catch((error) => {
+      showLauncherUpdate(error.message || "Não deu para abrir a atualização.", true);
+    });
+  };
   ui.ram.oninput = () => {
     ui.ramValue.textContent = ui.ram.value;
     ui.ram.setAttribute("aria-valuenow", ui.ram.value);
@@ -934,7 +1005,7 @@ async function boot() {
   } catch {
     state.pack = {
       launcherName: "Sitrus Launcher",
-      launcherVersion: "1.0.3",
+      launcherVersion: "1.0.4",
       modrinthSlug: "sitrus-cobblemon-mobile",
       modrinthUrl: "https://modrinth.com/modpack/sitrus-cobblemon-mobile",
       runtimeUrl: "https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest",
@@ -958,6 +1029,8 @@ async function boot() {
   fetchLatestPack().catch(() => {
     ui.packVersion.textContent = "• Sitrus Cobblemon";
   });
+  setTimeout(checkLauncherUpdate, 4000);
+  setInterval(checkLauncherUpdate, 6 * 60 * 60 * 1000);
   if ("serviceWorker" in navigator && !isNativeApp()) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }

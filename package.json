@@ -1,6 +1,6 @@
 {
   "name": "sitrus-launcher-mobile",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "Launcher do Sitrus Cobblemon para celular",
   "scripts": {
