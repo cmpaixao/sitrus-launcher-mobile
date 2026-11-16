@@ -1,10 +1,10 @@
 {
   "launcherName": "Sitrus Launcher",
-  "launcherVersion": "1.0.6",
+  "launcherVersion": "1.0.7",
   "modrinthSlug": "sitrus-cobblemon-mobile",
   "modrinthUrl": "https://modrinth.com/modpack/sitrus-cobblemon-mobile",
-  "runtimeName": "Zalith Launcher",
-  "runtimeUrl": "https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest",
+  "runtimeName": "Amethyst",
+  "runtimeUrl": "https://github.com/AngelAuraMC/Amethyst-Android/releases/latest",
   "discord": "https://discord.gg/wbavFswmkr",
   "ticket": "https://discord.com/channels/1364321967947382835/1371322509713997906",
   "wiki": "https://sitruscoblemon.gitbook.io/sitruscoblemon-docs",

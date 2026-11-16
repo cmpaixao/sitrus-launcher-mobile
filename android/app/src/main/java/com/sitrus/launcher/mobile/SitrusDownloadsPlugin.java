@@ -32,8 +32,8 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "SitrusDownloads")
 public class SitrusDownloadsPlugin extends Plugin {
-    private static final String ENGINE_PACKAGE = "com.movtery.zalithlauncher.v2";
-    private static final String IMPORT_ACTIVITY = "com.movtery.activity.ImportModpackActivity";
+    private static final String ENGINE_PACKAGE = "org.angelauramc.amethyst";
+    private static final String LAUNCH_ACTIVITY = "net.kdt.pojavlaunch.TestStorageActivity";
     private static final long ENGINE_MIN_BYTES = 80L * 1024L * 1024L;
     private volatile boolean openPackWhenInstalled = false;
     private volatile File pendingPack = null;
@@ -440,14 +440,38 @@ public class SitrusDownloadsPlugin extends Plugin {
     private void openPack(File pack) {
         Context context = getContext();
         if (context == null) throw new IllegalStateException("O Sitrus não está aberto.");
-        Uri uri = fileUri(pack);
-        context.grantUriPermission(ENGINE_PACKAGE, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setComponent(new ComponentName(ENGINE_PACKAGE, IMPORT_ACTIVITY));
-        intent.setDataAndType(uri, "application/zip");
-        intent.setClipData(ClipData.newRawUri("modpack", uri));
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        copyToDownloads(context, pack);
+        Intent intent = context.getPackageManager().getLaunchIntentForPackage(ENGINE_PACKAGE);
+        if (intent == null) {
+            intent = new Intent(Intent.ACTION_MAIN);
+            intent.setComponent(new ComponentName(ENGINE_PACKAGE, LAUNCH_ACTIVITY));
+        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startOnUi(intent);
+    }
+
+    private void copyToDownloads(Context context, File pack) {
+        if (Build.VERSION.SDK_INT < 29 || pack == null || !pack.isFile()) return;
+        try {
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, "Sitrus-Cobblemon-Mobile.mrpack");
+            values.put(android.provider.MediaStore.Downloads.MIME_TYPE, "application/octet-stream");
+            values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+            values.put(android.provider.MediaStore.Downloads.IS_PENDING, 1);
+            Uri uri = context.getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri == null) return;
+            try (InputStream in = new java.io.FileInputStream(pack); OutputStream out = context.getContentResolver().openOutputStream(uri)) {
+                if (out == null) return;
+                byte[] buffer = new byte[64 * 1024];
+                int count;
+                while ((count = in.read(buffer)) >= 0) out.write(buffer, 0, count);
+            }
+            values.clear();
+            values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0);
+            context.getContentResolver().update(uri, values, null, null);
+        } catch (Exception ignored) {
+            // o jogo abre mesmo se a cópia para Downloads falhar
+        }
     }
 
     private Uri fileUri(File file) {

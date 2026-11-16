@@ -122,7 +122,7 @@ const state = {
 function loadSettings() {
   try {
     return {
-      ramGb: 2,
+      ramGb: 4,
       renderer: "MobileGlues",
       serverAddress: "sitruscobblemon.com",
       lastTab: "home",
@@ -130,7 +130,7 @@ function loadSettings() {
       ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"),
     };
   } catch {
-    return { ramGb: 2, renderer: "MobileGlues", serverAddress: "sitruscobblemon.com", lastTab: "home", downloadedVersion: "" };
+    return { ramGb: 4, renderer: "MobileGlues", serverAddress: "sitruscobblemon.com", lastTab: "home", downloadedVersion: "" };
   }
 }
 
@@ -220,7 +220,9 @@ function renderAccount() {
 }
 
 function bindSettings() {
-  ui.ram.value = String(state.settings.ramGb || 2);
+  const ram = Math.max(4, Number(state.settings.ramGb) || 4);
+  state.settings.ramGb = ram;
+  ui.ram.value = String(ram);
   ui.ramValue.textContent = ui.ram.value;
   ui.renderer.value = state.settings.renderer || "MobileGlues";
   ui.serverAddress.value = state.settings.serverAddress || state.pack?.server?.address || "";
@@ -307,14 +309,12 @@ function downloadsPlugin() {
 }
 
 async function engineDownloadUrl() {
-  const plugin = downloadsPlugin();
-  const abi = (await plugin?.deviceAbi?.())?.abi || "arm64-v8a";
-  const response = await fetch("https://api.github.com/repos/ZalithLauncher/ZalithLauncher2/releases/latest", {
-    headers: { Accept: "application/vnd.github+json" },
+  const response = await fetch("https://api.github.com/repos/AngelAuraMC/Amethyst-Android/releases/latest", {
+    headers: { Accept: "application/vnd.github+json", "User-Agent": "SitrusLauncher" },
   });
   if (!response.ok) throw new Error("Não deu para achar o motor do jogo. Confira a internet.");
   const release = await response.json();
-  const match = (release.assets || []).find((asset) => asset.name.endsWith(`-${abi}.apk`) && !/mapping/i.test(asset.name));
+  const match = (release.assets || []).find((asset) => asset.name === "Amethyst.apk");
   if (!match?.browser_download_url) throw new Error("Não encontrei o motor do jogo para este celular.");
   return match.browser_download_url;
 }
@@ -528,7 +528,7 @@ async function play() {
       setStatus("Toque em Instalar. Ao voltar para o Sitrus, o modpack abre.", 0);
     } else {
       ui.playSheet.hidden = true;
-      setStatus("O modpack está abrindo. A primeira vez baixa os mods e pode demorar.", 100);
+      setStatus("O jogo abriu. Na primeira vez, importe o arquivo Sitrus-Cobblemon-Mobile.mrpack da pasta Downloads e use 4 GB de memória.", 100);
     }
   } catch (error) {
     ui.playSheet.hidden = true;
@@ -1036,10 +1036,10 @@ async function boot() {
   } catch {
     state.pack = {
       launcherName: "Sitrus Launcher",
-      launcherVersion: "1.0.6",
+      launcherVersion: "1.0.7",
       modrinthSlug: "sitrus-cobblemon-mobile",
       modrinthUrl: "https://modrinth.com/modpack/sitrus-cobblemon-mobile",
-      runtimeUrl: "https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest",
+      runtimeUrl: "https://github.com/AngelAuraMC/Amethyst-Android/releases/latest",
       discord: "https://discord.gg/wbavFswmkr",
       wiki: "https://sitruscoblemon.gitbook.io/sitruscoblemon-docs",
       store: "https://sitruscobblemon.craftingstore.net/",
