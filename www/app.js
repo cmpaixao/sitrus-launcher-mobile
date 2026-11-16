@@ -526,6 +526,9 @@ async function play() {
     } else if (result?.step === "install-engine") {
       showEngineSheet("install");
       setStatus("Toque em Instalar. Ao voltar para o Sitrus, o modpack abre.", 0);
+    } else if (result?.step === "controls") {
+      ui.playSheet.hidden = true;
+      setStatus("O HUD Sitrus abriu no jogo. Confirme a importação e use 4 GB de memória.", 100);
     } else {
       ui.playSheet.hidden = true;
       setStatus("O jogo abriu. Na primeira vez, importe o arquivo Sitrus-Cobblemon-Mobile.mrpack da pasta Downloads e use 4 GB de memória.", 100);
@@ -1036,7 +1039,7 @@ async function boot() {
   } catch {
     state.pack = {
       launcherName: "Sitrus Launcher",
-      launcherVersion: "1.0.7",
+      launcherVersion: "1.0.8",
       modrinthSlug: "sitrus-cobblemon-mobile",
       modrinthUrl: "https://modrinth.com/modpack/sitrus-cobblemon-mobile",
       runtimeUrl: "https://github.com/AngelAuraMC/Amethyst-Android/releases/latest",

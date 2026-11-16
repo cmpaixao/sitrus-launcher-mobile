@@ -197,10 +197,10 @@ public class SitrusDownloadsPlugin extends Plugin {
                 return;
             }
             openPackWhenInstalled = false;
-            report(96, "Abrindo o modpack...");
-            openPack(pack);
+            report(96, "Abrindo o jogo...");
+            String step = openPack(pack);
             JSObject result = new JSObject();
-            result.put("step", "import");
+            result.put("step", step);
             call.resolve(result);
         } catch (Exception error) {
             String message = error.getMessage();
@@ -437,16 +437,55 @@ public class SitrusDownloadsPlugin extends Plugin {
         return "install-engine";
     }
 
-    private void openPack(File pack) {
+    private String openPack(File pack) {
         Context context = getContext();
         if (context == null) throw new IllegalStateException("O Sitrus não está aberto.");
         copyToDownloads(context, pack);
+        if (!controlsImported(context)) {
+            File hud = copyHud(context);
+            if (hud != null) {
+                openControls(hud);
+                context.getSharedPreferences("sitrus", Context.MODE_PRIVATE).edit().putBoolean("hudImported", true).apply();
+                return "controls";
+            }
+        }
         Intent intent = context.getPackageManager().getLaunchIntentForPackage(ENGINE_PACKAGE);
         if (intent == null) {
             intent = new Intent(Intent.ACTION_MAIN);
             intent.setComponent(new ComponentName(ENGINE_PACKAGE, LAUNCH_ACTIVITY));
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startOnUi(intent);
+        return "import";
+    }
+
+    private boolean controlsImported(Context context) {
+        return context.getSharedPreferences("sitrus", Context.MODE_PRIVATE).getBoolean("hudImported", false);
+    }
+
+    private File copyHud(Context context) {
+        File dest = new File(new File(context.getCacheDir(), "sitrus"), "HUD-SITRUS-1.0.json");
+        if (dest.getParentFile() != null && !dest.getParentFile().isDirectory()) dest.getParentFile().mkdirs();
+        try (InputStream in = context.getAssets().open("public/controls/hud-sitrus-1.0.json"); OutputStream out = new FileOutputStream(dest)) {
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = in.read(buffer)) >= 0) out.write(buffer, 0, count);
+            return dest;
+        } catch (IOException error) {
+            return null;
+        }
+    }
+
+    private void openControls(File hud) {
+        Context context = getContext();
+        if (context == null) throw new IllegalStateException("O Sitrus não está aberto.");
+        Uri uri = fileUri(hud);
+        context.grantUriPermission(ENGINE_PACKAGE, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setComponent(new ComponentName(ENGINE_PACKAGE, "net.kdt.pojavlaunch.ImportControlActivity"));
+        intent.setDataAndType(uri, "application/json");
+        intent.setClipData(ClipData.newRawUri("controls", uri));
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
         startOnUi(intent);
     }
 
